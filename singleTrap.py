@@ -9,89 +9,59 @@ import matplotlib.pyplot as plt
 
 # Constants needed 
 u0 = 4 * np.pi * 1e-7
+mj = 0.5
+gj = 2
+ub = 9.274e-24 # [J/T]
+M = 1.66e-27 * 7 # [Kg] Litium mass        
 
-class singleTrap:
-    def __init__(self, trapCenter = 0):
-        """
-        Initialize trap coil geometry
-        """
-        self._trapCenter = trapCenter
-        self.coilRadius = 5.1e-3 # Measure to the inner layer of coil
-        self.coilSpace = 10e-3 # Measure from the center of front/back coil
-        self.wireDia = 0.405e-3 # AWG 26
-        self.numLayersFront = 4
-        self.numTurnsPerLayerFront = 4
-        self.numLayersBack = 4
-        self.numTurnsPerLayerBack = 2
+
+class slower:
     
-    def onAxisMagField(self, curr, z):
-        """
-        Calculate the magnetic field generated from the anti-helmholtz coil
-        under current "curr" at position z (from the trap center), in the 
-        labtory frame
-        """
-        frontCoilCenter = self.coilSpace / 2 + self._trapCenter
-        backCoilCenter = -self.coilSpace / 2 + self._trapCenter
-        B = 0
-        for centerPos, layers, turns in zip( # for front and back coil 
-                    [frontCoilCenter, backCoilCenter], 
-                    [self.numLayersFront, self.numLayersBack], 
-                    [self.numTurnsPerLayerFront, self.numTurnsPerLayerBack]):
-            
-            for l in range(layers):
-                layerRadius = self.coilRadius + (l + 0.5) * self.wireDia # radius for specific layre 
-                for t in range(turns):
-                    windingCenter = centerPos  / 2 - (layers / 2  + 0.5) * self.wireDia + t * self.wireDia # center position for single winding
-                    current = curr if centerPos > self._trapCenter else -curr
-                    B += u0 * current * layerRadius**2 / 2 / (((z - windingCenter)**2 + layerRadius**2)**1.5)
-        return B
-
-        
+    ###########
+    # GLOBALS #
+    ###########
     
-    def plotField1D(self, pos, B):
-        """
-        Plot the magnetic field distribution along 
-        a single dimention
-        """
-        try:
-            assert len(pos) == len(B)
-        except AssertionError:
-            print("position and field has different length: ({:2d}, {:2d})".format(len(pos), len(B)))
-
-        else:
-            fig, ax = plt.subplots()
-            ax.plot(pos*1e3, B, '*')
-            plt.show()
-        
-
-
-class slower():
+    ## GEOMETRY OF A SINGLE TRAP COIL
+    ################################
+    coilRadius = 5.1e-3 # Measure to the inner layer of coil
+    coilSpace = 10e-3 # Measure from the center of front/back coil
+    wireDia = 0.405e-3 # AWG 26
+    numLayersFront = 4
+    numTurnsPerLayerFront = 4
+    numLayersBack = 4
+    numTurnsPerLayerBack = 2
+    
+    
+    ## GEOMETRY OF SLOWER
+    #####################
+    trapSpace = coilSpace / 2.
+    numTraps = 480
+    divTrapNum = 180
+    
+    totalLength = (numTraps - 1) * trapSpace
+    stage1Length = divTrapNum * trapSpace
+    stage2Length = (numTraps - divTrapNum) * trapSpace
+    middlePos = trapSpace * (divTrapNum - 1)
+    
     def __init__(self, initialV, finalV, accRatio, current):
         """
         Initialize slower geometry and dynamics settings;
         All geometry parameters are calculating from trap center;
         """
-        # Geometry Settings
-        self.coilSpace = 10e-3
-        self.trapSpace = self.coilSpace / 2.
-        self.numTraps = 480
-        self.divTrapNum = 180
         
-        self.totalLength = (self.numTraps - 1) * self.trapSpace
-        self.stage1Length = self.divTrapNum * self.trapSpace
-        self.stage2Length = (self.numTraps - self.divTrapNum) * self.trapSpace
-
-        # Dynamics Settings 
+        ## DYNAMICS OF SLOWER
+        #####################
+        
         self.initialV = initialV
         self.finalV = finalV
         self.accRatio = accRatio
         
         self.stage1Acc, self.stage2Acc = self.__accValue__()
         self.middleV = np.sqrt(finalV**2 - 2 * self.stage1Acc * self.stage1Length)
-        
         self.stage1Time, self.stage2Time, self.totalTime = self.__time__()
 
-        # Electronics 
+        ## ELECTRONICS OF SLOWER
+        ########################
         self.current = current
         
     def __accValue__(self):
@@ -119,8 +89,45 @@ class slower():
               "\nInitial V[m/s]:  {:<25} \t Final V[m/s]:  {:<}".format(self.initialV, self.finalV),\
               "\nStage1 Acc[m/s2]:  {:<25.2f} \t Stage2 Acc[m/s2]:  {:<.2f}".format(self.stage1Acc, self.stage2Acc),\
               "\nStage1 time[ms]:  {:<25.2f} \t Stage2 time[ms]:  {:<.2f}".format(self.stage1Time*1e3, self.stage2Time*1e3),\
+              "\nTotal time[ms]:  {:<25.2f} \t Middle V[m/s]:  {:<.2f}".format(self.totalTime * 1e3, self.middleV)\
               )
-        return '0'
+        return '\n'
+
+    def calcTrapVelocity(self, trapNum):
+        """
+        Calculate the effective moving velocity of specified trap
+        """
+        pos = self.trapSpace * (trapNum - 1)
+        if trapNum <= self.divTrapNum:
+            v = np.sqrt(self.initialV**2 + 2 * self.stage1Acc * pos)
+        else:
+            v = np.sqrt(self.middleV**2 + 2 * self.stage2Acc * (pos - self.middlePos))
+        return v
+
+    def calcTrapOnTime(self, trapNum):
+        """
+        Find trap turn on time and pulse length
+        assumes trap at maximium depth when particle arrives at the center
+        """
+        
+        if trapNum == 1:
+            tPeriod = 2 * self.trapSpace / 2 / self.calcTrapVelocity(trapNum)
+            tOn = -0.5 * tPeriod
+        else:
+            pos = self.trapSpace * (trapNum - 1)
+            tOn_pre, tPeriod_pre = self.calcTrapOnTime(trapNum - 1)
+            tOn = tOn_pre + 0.5 * tPeriod_pre
+            tPeriod = 2 * self.trapSpace / 2 / self.calcTrapVelocity(trapNum)
+        return tOn, tPeriod
+            
+
+    def calcTrapAcc(self, trapNum):
+        """
+        find  acceleration value for a given trap number
+        """
+        
+        acc = self.stage1Acc if trapNum <= self.divTrapNum else self.stage2Acc
+        return acc
         
     def effectiveOnAxisMagField(self, curr, z):
         """
@@ -130,4 +137,69 @@ class slower():
         return 0
             
         
+class singleTrap(slower):
+    def __init__(self, trapNum, initialV = 480, finalV = 50, accRatio = 1, current = 400):
+        """
+        Initialize trap coil geometry
+        """
+        super().__init__(initialV, finalV, accRatio, current)
+        self.trapCenter = self.trapSpace * (trapNum - 1)
+        self.trapNum = trapNum
+        
+        self.trapVelocity = self.calcTrapVelocity(trapNum)
+        self.trapTurnOnTime, self.pulseLength  = self.calcTrapOnTime(trapNum)
+        self.trapAcc = self.calcTrapAcc(trapNum)
+        
+        
+    def onAxisMagField(self, z = []):
+        """
+        Calculate the magnetic field generated from the anti-helmholtz coil
+        under current "curr" at position z (from the trap center), in the 
+        labtory frame
+        """
+        if z ==[]:
+            z = np.linspace(-self.coilSpace*2, self.coilSpace * 2, 100) + self.trapCenter
+        else:
+            pass
+        
+        frontCoilCenter = self.coilSpace / 2 + self.trapCenter
+        backCoilCenter = -self.coilSpace / 2 + self.trapCenter
+        B = 0
+        
+        for centerPos, layers, turns in zip( # for front and back coil 
+                [frontCoilCenter, backCoilCenter], 
+                [self.numLayersFront, self.numLayersBack], 
+                [self.numTurnsPerLayerFront, self.numTurnsPerLayerBack]):
+            
+            for l in range(layers):
+                layerRadius = self.coilRadius + (l + 0.5) * self.wireDia # radius for specific layre 
+                for t in range(turns):
+                    windingCenter = centerPos - (turns / 2  + 0.5) * self.wireDia + t * self.wireDia # center position for single winding
+                    current = self.current if centerPos > self.trapCenter else -self.current
+                    B += u0 * current * layerRadius**2 / 2 / (((z - windingCenter)**2 + layerRadius**2)**1.5)
+        B_eff = abs(B) + M * self.trapAcc * (z - self.trapCenter)/ (ub * mj * gj)
+        return z,B,B_eff
+
+        
+    def plotField1D(self, pos, B, B_eff):
+        """
+        Plot the magnetic field distribution along 
+        a single dimention
+        """
+        try:
+            assert len(pos) == len(B)
+        except AssertionError:
+            print("position and field has different length: ({:2d}, {:2d})".format(len(pos), len(B)))
+
+        else:
+            fig, ax = plt.subplots()
+            ax.plot(pos*1e3, abs(B), '*', label = 'lab frame')
+            ax.plot(pos*1e3, B_eff, 'r--', label = 'co-moving frame')
+            ax.set_xlabel('Position[mm]')
+            ax.set_ylabel('Magnetic field[T]')
+            ax.set_title('Magnetic field in coil #' + str(self.trapNum))
+            ax.legend()
+            plt.show()
+    
+
     
