@@ -177,7 +177,7 @@ class singleTrap(slower):
                     windingCenter = centerPos - (turns / 2  + 0.5) * self.wireDia + t * self.wireDia # center position for single winding
                     current = self.current if centerPos > self.trapCenter else -self.current
                     B += u0 * current * layerRadius**2 / 2 / (((z - windingCenter)**2 + layerRadius**2)**1.5)
-        B_eff = abs(B) + M * self.trapAcc * (z - self.trapCenter)/ (ub * mj * gj)
+        B_eff = abs(B) + M * self.trapAcc * (z - z[np.argmin(abs(B))])/ (ub * mj * gj)
         return z,B,B_eff
 
         
