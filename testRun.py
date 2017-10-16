@@ -17,10 +17,10 @@
 from singleTrap import *
 
 trapNum = np.array([x for x in range(1,480)])
-initialV = 480
-finalV = 50
+initialV = 500
+finalV = 390
 accRatio = 1
-current = 400
+current = 500
 
 N = 10
 p = singleTrap(N,

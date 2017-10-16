@@ -114,7 +114,6 @@ class slower:
             tPeriod = 2 * self.trapSpace / 2 / self.calcTrapVelocity(trapNum)
             tOn = -0.5 * tPeriod
         else:
-            pos = self.trapSpace * (trapNum - 1)
             tOn_pre, tPeriod_pre = self.calcTrapOnTime(trapNum - 1)
             tOn = tOn_pre + 0.5 * tPeriod_pre
             tPeriod = 2 * self.trapSpace / 2 / self.calcTrapVelocity(trapNum)
@@ -178,9 +177,14 @@ class singleTrap(slower):
                     current = self.current if centerPos > self.trapCenter else -self.current
                     B += u0 * current * layerRadius**2 / 2 / (((z - windingCenter)**2 + layerRadius**2)**1.5)
         B_eff = abs(B) + M * self.trapAcc * (z - z[np.argmin(abs(B))])/ (ub * mj * gj)
+        
         return z,B,B_eff
 
+    #def fieldPeak(self, B):
         
+        
+        
+    
     def plotField1D(self, pos, B, B_eff):
         """
         Plot the magnetic field distribution along 
