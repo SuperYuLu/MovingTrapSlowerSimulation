@@ -180,11 +180,45 @@ class singleTrap(slower):
         
         return z,B,B_eff
 
-    #def fieldPeak(self, B):
+
+    def trapFieldCenter(self, z, B):
+        """
+        Find the magnetic field center (0 field) and return corresponding 
+        position 
+        """
+        frontCoilCenter = self.coilSpace / 2 + self.trapCenter
+        backCoilCenter = -self.coilSpace / 2 + self.trapCenter
+        idxFrontCenter = np.argmin(abs(z - frontCoilCenter))
+        idxBackCenter = np.argmin(abs(z - backCoilCenter))
+        
+        idxFieldCenter = np.argmin(abs(B[idxBackCenter: idxFrontCenter])) + idxBackCenter
+        return z[idxFieldCenter]
         
         
+    def fieldPeak(self, z, B):
+        """ 
+        Find front and back peak of the magnetic field potential
+        """
+        fieldCenter = self.trapFieldCenter(z, B)
+        idxFieldCenter = np.argmin(abs(z - fieldCenter))
         
-    
+        frontPeak = max(B[idxFieldCenter:])
+        frontPeakIdx = np.argmax(B[idxFieldCenter:])
+        backPeak = 0
+        backPeakIdx = 0
+        diffB = abs(np.diff(B))       
+        for i in range(idxFieldCenter - 1, 0, -1):
+            if diffB[i] < diffB[i - 1] and diffB[i] < diffB[i+1]:
+                backPeak = B[i]
+                backPeakIdx = i
+                break        
+        z0 = z[frontPeakIdx] if frontPeak <= backPeak else z[backPeakIdx]
+        
+            
+            
+        return frontPeak, backPeak
+        
+                
     def plotField1D(self, pos, B, B_eff):
         """
         Plot the magnetic field distribution along 

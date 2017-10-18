@@ -15,10 +15,11 @@
 # 
 
 from singleTrap import *
+import numpy as np 
 
 trapNum = np.array([x for x in range(1,480)])
 initialV = 500
-finalV = 390
+finalV = 0
 accRatio = 1
 current = 500
 
@@ -31,3 +32,5 @@ p = singleTrap(N,
 
 z, B, B_eff = p.onAxisMagField()
 p.plotField1D(z, B, B_eff)
+print(p.trapFieldCenter(z, B))
+print(p.fieldPeak(z, B_eff))
