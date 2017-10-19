@@ -6,7 +6,7 @@ Created on Fri Oct 13 13:53:06 2017
 """
 import numpy as np
 import matplotlib.pyplot as plt 
-
+import matplotlib as mpl
 # Constants needed 
 u0 = 4 * np.pi * 1e-7
 mj = 0.5
@@ -213,8 +213,6 @@ class singleTrap(slower):
                 backPeakIdx = i
                 break        
         z0 = z[frontPeakIdx] if frontPeak <= backPeak else z[backPeakIdx]
-        
-            
             
         return frontPeak, backPeak
         
@@ -237,6 +235,10 @@ class singleTrap(slower):
             ax.set_ylabel('Magnetic field[T]')
             ax.set_title('Magnetic field in coil #' + str(self.trapNum))
             ax.legend()
+            ax.get_xaxis().set_minor_locator(mpl.ticker.AutoMinorLocator())
+            ax.get_yaxis().set_minor_locator(mpl.ticker.AutoMinorLocator())
+
+            ax.grid(which = 'both')
             plt.show()
     
 
