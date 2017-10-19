@@ -25,6 +25,6 @@ script:
   - ls -al
   - make check
   - python3 movingTraps.py
-  - python3 functions
+  - python3 functions.py
   - make clean 
   
