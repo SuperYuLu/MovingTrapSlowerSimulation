@@ -1,4 +1,5 @@
-# MovingTrapSlowerSimulation
+# MovingTrapSlowerSimulation  
+[![Build Status](https://travis-ci.org/SuperYuLu/MovingTrapSlowerSimulation.svg?branch=master)](https://travis-ci.org/SuperYuLu/MovingTrapSlowerSimulation)
 Simulation of a moving magnetic trap for adiabatic decelerating of paramagnetic atoms
 
 ## Intro  
