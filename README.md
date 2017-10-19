@@ -7,14 +7,18 @@ The novelty of our approach is to use a moving magnetic trap which consist of 48
 
 ## How to run  
 ### Install  
+
 '''
 git clone git@github.com:SuperYuLu/MovingTrapSlowerSimulation.git
 '''
 ### Check  
+
 '''
 make check
 '''
-### single trap analysis
+
+### single trap analysis  
+
 '''
 make singleTrapRun
 '''
@@ -23,3 +27,5 @@ Adding new features.....
 
 ## Results  
 ### Single trap analysis  
+![single trap run](https://github.com/SuperYuLu/MovingTrapSlowerSimulation/blob/master/img/singleTrapRun.png)
+
