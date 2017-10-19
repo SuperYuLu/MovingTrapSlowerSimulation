@@ -23,5 +23,8 @@ before_script:
 
 script:
   - ls -al
-  - python3 singleTrapRun.py
+  - make check
+  - python3 movingTraps.py
+  - python3 functions
+  - make clean 
   
